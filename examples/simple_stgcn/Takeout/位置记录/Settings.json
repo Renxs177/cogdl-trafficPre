@@ -1,0 +1,47 @@
+{
+  "createdTime": "2019-07-25T09:48:47.148Z",
+  "modifiedTime": "2020-08-31T14:21:35.465Z",
+  "historyEnabled": false,
+  "deviceSettings": [{
+    "deviceTag": 2013263825,
+    "reportingEnabled": false,
+    "devicePrettyName": "Redmi K30",
+    "platformType": "ANDROID",
+    "deviceCreationTime": "2021-10-18T14:20:22.559Z",
+    "latestLocationReportingSettingChange": {
+      "reportingEnabledModificationTime": "2021-10-18T14:20:22.559Z"
+    },
+    "androidOsLevel": 29,
+    "deviceSpec": {
+      "manufacturer": "Xiaomi",
+      "brand": "Redmi",
+      "product": "phoenix",
+      "device": "phoenix",
+      "model": "Redmi K30",
+      "isLowRam": false
+    }
+  }, {
+    "deviceTag": -778747150,
+    "reportingEnabled": false,
+    "devicePrettyName": "Redmi K30",
+    "platformType": "ANDROID",
+    "deviceCreationTime": "2021-08-10T15:17:43.800Z",
+    "latestLocationReportingSettingChange": {
+      "reportingEnabledModificationTime": "2021-08-10T15:17:43.800Z"
+    },
+    "androidOsLevel": 29,
+    "deviceSpec": {
+      "manufacturer": "Xiaomi",
+      "brand": "Redmi",
+      "product": "phoenix",
+      "device": "phoenix",
+      "model": "Redmi K30",
+      "isLowRam": false
+    }
+  }],
+  "latestLocationHistorySettingChange": {
+    "historyEnabledModificationTime": "2019-07-25T09:48:47.148Z"
+  },
+  "hasReportedLocations": false,
+  "hasSetRetention": false
+}

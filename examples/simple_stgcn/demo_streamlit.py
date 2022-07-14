@@ -15,7 +15,7 @@ from folium.plugins import HeatMap
 
 # travel_log = pd.read_csv("F:/CogDL/cogdl-for-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_streamlit.csv")
 # travel_log = pd.read_csv("/home/xiangsheng/zp/cogdl-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_streamlit.csv")
-travel_log = pd.read_csv("../demo_streamlit.csv")
+travel_log = pd.read_csv("./data/pems-stgcn/demo_streamlit.csv")
 timestamp = travel_log['timestamp']
 timestamp_set = set(timestamp)
 new_timeatamp = list(timestamp_set)
@@ -52,7 +52,7 @@ def load_data():
     """ Load the cleaned data with latitudes, longitudes & timestamps """
     # travel_log = pd.read_csv("F:/CogDL/cogdl-for-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_streamlit.csv")
     # travel_log = pd.read_csv("/home/xiangsheng/zp/cogdl-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_streamlit.csv")
-    travel_log = pd.read_csv("../demo_streamlit.csv")
+    travel_log = pd.read_csv("./data/pems-stgcn/demo_streamlit.csv")
     travel_log["date"] = pd.to_datetime(travel_log["timestamp"])
     return travel_log
 

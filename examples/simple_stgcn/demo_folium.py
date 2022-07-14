@@ -1,27 +1,18 @@
-import streamlit as st
-import streamlit.components.v1 as components
-from datetime import datetime
-import flickrapi
-import random
-from dotenv import load_dotenv
-import os
-import urllib
+import datetime
 import numpy as np
 import pandas as pd
 import folium
 from folium.plugins import HeatMap
 
 
-
-# travel_log = pd.read_csv("F:/CogDL/cogdl-for-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_streamlit.csv")
-travel_log = pd.read_csv("/home/xiangsheng/zp/cogdl-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_streamlit.csv")
+travel_log = pd.read_csv("F:/CogDL/cogdl-for-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_streamlit.csv")
 timestamp = travel_log['timestamp']
 timestamp_set = set(timestamp)
 new_timeatamp = list(timestamp_set)
 
 
 def get_timestamp(date):
-    return datetime.strptime(date,"%Y-%m-%d %H:%M:%S").timestamp()
+    return datetime.datetime.strptime(date,"%Y-%m-%d %H:%M:%S").timestamp()
 new_sort_timeatamp=sorted(new_timeatamp,key=lambda date: get_timestamp(date))
 
 
@@ -29,65 +20,22 @@ data_move = []
 for i in new_sort_timeatamp:
     df = travel_log[(travel_log['timestamp'] == i)]
     num = df.shape[0]
+    # 获取纬度
     lat = np.array(df["latitude"][0:num])
+    # 获取经度
     lon = np.array(df["longitude"][0:num])
+    # 获取PM2.5，转化为numpy浮点型
     speed = np.array(df["predict_speed"][0:num], dtype=float)
+    # 将数据制作成[lats, lons, weights]的形式
     data1 = [[lat[i], lon[i], speed[i]] for i in range(num)]
     data_move.append(data1)
-
-load_dotenv()
-
-# set page layout
-st.set_page_config(
-    page_title="Travel Exploration",
-    page_icon="🌍",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-
-@st.cache
-def load_data():
-    """ Load the cleaned data with latitudes, longitudes & timestamps """
-    # travel_log = pd.read_csv("F:/CogDL/cogdl-for-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_streamlit.csv")
-    travel_log = pd.read_csv("/home/xiangsheng/zp/cogdl-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_streamlit.csv")
-    travel_log["date"] = pd.to_datetime(travel_log["timestamp"])
-    return travel_log
-
-
-st.title("🌍 Travels Exploration")
-
-travel_data = load_data()
-
-# # Calculate the timerange for the slider
-# min_ts = datetime.strptime(min(travel_data["timestamp"]), '%Y-%m-%d %H:%M:%S')
-# max_ts = datetime.strptime(max(travel_data["timestamp"]), '%Y-%m-%d %H:%M:%S')
-#
-# st.sidebar.subheader("Inputs")
-# min_selection, max_selection = st.sidebar.slider(
-#     "Timeline", min_value=min_ts, max_value=max_ts, value=[min_ts, max_ts]
-# )
-#
-# # Toggles for the feature selection in sidebar
-# show_heatmap = st.sidebar.checkbox("Show Heatmap")
-#
-#
-# # Filter Data based on selection
-# st.write(f"Filtering between {min_selection.date()} & {max_selection.date()}")
-# travel_data = travel_data[
-#     (travel_data["date"] >= min_selection) & (travel_data["date"] <= max_selection)
-#     ]
-# st.write(f"Data Points: {len(travel_data)}")
-# # Plot the GPS coordinates on the map
-# st.map(travel_data, zoom=6, use_container_width = True)
-
-
 
 # 绘制Map，中心经纬度[32, 120],开始缩放程度是5倍
 # tiles用于指示地图风格 主要用到的风格：Stamen Toner(黑白)，默认(OSM)，Stamen Terrain(地形图)
 map_osm = folium.Map(location=[34, -118], zoom_start=10,tiles='Stamen Toner',control_scale=True)
 
 map_osm.add_child(folium.ClickForMarker()) # 标记图标
+
 
 
 
@@ -124,11 +72,13 @@ hm = folium.plugins.HeatMapWithTime(data_move, index=new_sort_timeatamp, name="S
                  max_speed=100, speed_step=1, position='bottomleft',
                  overlay=True, control=True, show=True)
 hm.add_to(map_osm)
-st.subheader("Heatmap")
-fig = folium.Figure().add_child(map_osm)
-components.html(fig.render(), height=800, width=1600)
-file_path = r"./demo_traffic.html"
+
+
+file_path = r"./AirQualityMap.html"
 hm.save(file_path)
+
+
+
 
 
 

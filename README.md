@@ -89,130 +89,13 @@ A quickstart example can be found in the [quick_start.py](https://github.com/THU
 from cogdl import experiment
 
 # basic usage
-experiment(dataset="cora", model="gcn")
-
-# set other hyper-parameters
-experiment(dataset="cora", model="gcn", hidden_size=32, epochs=200)
-
-# run over multiple models on different seeds
-experiment(dataset="cora", model=["gcn", "gat"], seed=[1, 2])
-
-# automl usage
-def search_space(trial):
-    return {
-        "lr": trial.suggest_categorical("lr", [1e-3, 5e-3, 1e-2]),
-        "hidden_size": trial.suggest_categorical("hidden_size", [32, 64, 128]),
-        "dropout": trial.suggest_uniform("dropout", 0.5, 0.8),
-    }
-
-experiment(dataset="cora", model="gcn", seed=[1, 2], search_space=search_space)
-```
-
-Some interesting applications can be used through `pipeline` API. An example can be found in the [pipeline.py](https://github.com/THUDM/cogdl/tree/master/examples/pipeline.py). 
-
-```python
-from cogdl import pipeline
-
-# load OAGBert model and perform inference
-oagbert = pipeline("oagbert")
-outputs = oagbert(["CogDL is developed by KEG, Tsinghua.", "OAGBert is developed by KEG, Tsinghua."])
-```
-
-More details of the OAGBert usage can be found [here](./cogdl/oag/README.md).
-
-### Command-Line Usage
-
-You can also use `python scripts/train.py --dataset example_dataset --model example_model` to run example_model on example_data.
-
-- --dataset, dataset name to run, can be a list of datasets with space like `cora citeseer`. Supported datasets include
-'cora', 'citeseer', 'pumbed', 'ppi', 'wikipedia', 'blogcatalog', 'flickr'. More datasets can be found in the [cogdl/datasets](https://github.com/THUDM/cogdl/tree/master/cogdl/datasets).
-- --model, model name to run, can be a list of models like `gcn gat`. Supported models include
-'gcn', 'gat', 'graphsage', 'deepwalk', 'node2vec', 'hope', 'grarep', 'netmf', 'netsmf', 'prone'. More models can be found in the [cogdl/models](https://github.com/THUDM/cogdl/tree/master/cogdl/models).
-
-For example, if you want to run GCN and GAT on the Cora dataset, with 5 different seeds:
-
-```bash
-python scripts/train.py --dataset cora --model gcn gat --seed 0 1 2 3 4
-```
-
-Expected output:
-
-| Variant          | test_acc       | val_acc        |
-|------------------|----------------|----------------|
-| ('cora', 'gcn')  | 0.8050±0.0047  | 0.7940±0.0063  |
-| ('cora', 'gat')  | 0.8234±0.0042  | 0.8088±0.0016  |
-
-If you have ANY difficulties to get things working in the above steps, feel free to open an issue. You can expect a reply within 24 hours.
+experiment(dataset="pems-288", model="stgcn")
 
 
-## ❗ FAQ
 
-<details>
-<summary>
-How to contribute to CogDL?
-</summary>
-<br/>
 
-If you have a well-performed algorithm and are willing to implement it in our toolkit to help more people, you can first [open an issue](https://github.com/THUDM/cogdl/issues) and then create a pull request, detailed information can be found [here](https://help.github.com/en/articles/creating-a-pull-request). 
 
-Before committing your modification, please first run `pre-commit install` to setup the git hook for checking code format and style using `black` and `flake8`. Then the `pre-commit` will run automatically on `git commit`! Detailed information of `pre-commit` can be found [here](https://pre-commit.com/).
-</details>
 
-<details>
-<summary>
-How to enable fast GNN training?
-</summary>
-<br/>
-CogDL provides a fast sparse matrix-matrix multiplication operator called [GE-SpMM](https://arxiv.org/abs/2007.03179) to speed up training of GNN models on the GPU. 
-The feature will be automatically used if it is available.
-Note that this feature is still in testing and may not work under some versions of CUDA.
-</details>
-
-<details>
-<summary>
-How to run parallel experiments with GPUs on several models?
-</summary>
-<br/>
-
-If you want to run parallel experiments on your server with multiple GPUs on multiple models, GCN and GAT, on the Cora dataset:
-
-```bash
-$ python scripts/train.py --dataset cora --model gcn gat --hidden-size 64 --devices 0 1 --seed 0 1 2 3 4
-```
-
-Expected output:
-
-| Variant         | Acc           |
-| --------------- | ------------- |
-| ('cora', 'gcn') | 0.8236±0.0033 |
-| ('cora', 'gat') | 0.8262±0.0032 |
-</details>
-
-<details>
-<summary>
-How to use models from other libraries?
-</summary>
-<br/>
-If you are familiar with other popular graph libraries, you can implement your own model in CogDL using modules from PyTorch Geometric (PyG).
-For the installation of PyG, you can follow the instructions from PyG (https://github.com/rusty1s/pytorch_geometric/#installation).
-For the quick-start usage of how to use layers of PyG, you can find some examples in the [examples/pyg](https://github.com/THUDM/cogdl/tree/master/examples/pyg/).
-</details>
-
-<details>
-<summary>
-How to make a successful pull request with unit test
-</summary>
-<br/>
-To have a successful pull request, you need to have at least (1) your model implementation and (2) a unit test.
-
-You might be confused why your pull request was rejected because of 'Coverage decreased ...' issue even though your model is working fine locally. This is because you have not included a unit test, which essentially runs through the extra lines of code you added. The Travis CI service used by Github conducts all unit tests on the code you committed and checks how many lines of the code have been checked by the unit tests, and if a significant portion of your code has not been checked (insufficient coverage), the pull request is rejected.
-
-So how do you do a unit test? 
-
-* Let's say you implement a GNN model in a script `models/nn/abcgnn.py` that does the task of node classification. Then, you need to add a unit test inside the script `tests/tasks/test_node_classification.py` (or whatever relevant task your model does). 
-* To add the unit test, you simply add a function *test_abcgnn_cora()* (just follow the format of the other unit tests already in the script), fill it with required arguments and the last line in the function *'assert 0 <= ret["Acc"] <= 1'* is the very basic sanity check conducted by the unit test. 
-* After modifying `tests/tasks/test_node_classification.py`, commit it together with your `models/nn/abcgnn.py` and your pull request should pass.
-</details>
 
 ## CogDL Team
 CogDL is developed and maintained by [Tsinghua, ZJU, BAAI, DAMO Academy, and ZHIPU.AI](https://cogdl.ai/about/). 

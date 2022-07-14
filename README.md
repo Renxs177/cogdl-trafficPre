@@ -87,6 +87,7 @@ A quickstart example can be found in the [quick_start.py](https://github.com/THU
 
 ```python
 from cogdl import experiment
+```
 
 # basic usage
 experiment(dataset="pems-288", model="stgcn")

@@ -1,11 +1,10 @@
-cogdl-trafficPre
-[demo](https://renxs177.github.io/cogdl-trafficPre/demo_traffic.html)   
+[cogdl-trafficPre demo](https://renxs177.github.io/cogdl-trafficPre/demo_traffic.html)   
 ## Usage
 
 ### API Usage
 
 You can run all kinds of experiments through CogDL APIs, especially `experiment`. You can also use your own datasets and models for experiments. 
-A quickstart example can be found in the [quick_start.py](https://github.com/THUDM/cogdl/tree/master/examples/quick_start.py). More examples are provided in the [examples/](https://github.com/THUDM/cogdl/tree/master/examples/).
+A quickstart example can be found in the [STGCN_example.py](https://github.com/Renxs177/cogdl-trafficPre/examples/STGCN_example.py). More examples are provided in the [examples/](https://github.com/Renxs177/cogdl-trafficPre/examples/).
 
 ```python
 from cogdl import experiment

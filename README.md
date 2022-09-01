@@ -14,7 +14,7 @@ from cogdl import experiment
 ```
 
 ## basic usage
-experiment(dataset="pems-288", model="stgcn")
+experiment(dataset="pems-stgcn", model="stgcn")
 
 
 

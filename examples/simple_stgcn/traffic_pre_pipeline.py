@@ -43,6 +43,8 @@ import urllib
 import numpy as np
 import pandas as pd
 import folium
+from cogdl.utils import makedirs
+import tqdm
 
 
 def get_timestamp(date):
@@ -78,10 +80,53 @@ def files_exist(files):
     return all([osp.exists(f) for f in files])
 
 
+def download_url(sss, url, folder, name=None, log=True):
+    r"""Downloads the content of an URL to a specific folder.
+
+    Args:
+        url (string): The url.
+        folder (string): The folder.
+        name (string): saved filename.
+        log (bool, optional): If :obj:`False`, will not print anything to the
+            console. (default: :obj:`True`)
+    """
+    if log:
+        print("Downloading", url)
+
+    makedirs(folder)
+
+    try:
+        # data = request.urlopen(url)
+
+        data = sss.get(url, stream=True)
+        total = int(data.headers.get('content-length', 0))
+    except Exception as e:
+        print(e)
+        print("Failed to download the dataset.")
+        print(f"Please download the dataset manually and put it under {folder}.")
+        exit(1)
+
+    if name is None:
+        filename = url.rpartition("/")[2]
+    else:
+        filename = name
+    path = osp.join(folder, filename)
+
+    with open(path, "wb") as f:
+        for da in data.iter_content(chunk_size=1024):
+            size = f.write(da)
+
+    return path
+
+
 if __name__ == "__main__":
 
+    import os
+    # 使用第一张与第三张GPU卡
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    import warnings
+    warnings.filterwarnings("ignore")
 
-    bbb = 0
     kwargs = {"epochs": 1,
               "kernel_size": 3,
               "n_his": 20,
@@ -96,57 +141,88 @@ if __name__ == "__main__":
               }
 
 
-    meta_path = os.path.split(os.path.realpath(__file__))[0] + r'\data\pems-stgcn\raw\station_meta_288.csv'
-    print(os.path.abspath(__file__))
-    raw_path = os.path.split(os.path.realpath(__file__))[0] + r'\data\pems-stgcn\raw'
-    process_path = os.path.split(os.path.realpath(__file__))[0] + r'\data\pems-stgcn\processed'
-    print(raw_path)
+    meta_path = os.path.split(os.path.realpath(__file__))[0] + '/data/pems-stgcn/raw/station_meta_288.csv'
+    raw_path = os.path.split(os.path.realpath(__file__))[0] + '/data/pems-stgcn/raw'
+    process_path = os.path.split(os.path.realpath(__file__))[0] + '/data/pems-stgcn/processed'
+    latest_data_name = "None"
 
-    #
-    # latest_data_name = "None"
-    # s = requests.Session()
-    # username = "Renxs177@gmail.com"
-    # password = "!2P#&~3bookr"
-    # login_url = "https://pems.dot.ca.gov"
-    # # search_url= "https://pems.dot.ca.gov/?dnode=Clearinghouse&type=station_5min&district_id=7&submit=Submit"
-    # search_url = "https://pems.dot.ca.gov/?srq=clearinghouse&district_id=7&geotag=null&yy=2022&type=station_5min&returnformat=text"
-    # url_meta = "https://pems.dot.ca.gov/?srq=clearinghouse&district_id=7&geotag=null&yy=2022&type=meta&returnformat=text"
-    # result = s.post(url=login_url, data={"username": username, "password": password, "commit": "login"})
+
+    current_year = datetime.datetime.now().year
+    s = requests.Session()
+    username = "Renxs177@gmail.com"
+    password = "!2P#&~3bookr"
+    login_url = "https://pems.dot.ca.gov"
+    # search_url= "https://pems.dot.ca.gov/?dnode=Clearinghouse&type=station_5min&district_id=7&submit=Submit"
+    search_url = f"https://pems.dot.ca.gov/?srq=clearinghouse&district_id=7&geotag=null&yy={current_year}&type=station_5min&returnformat=text"
+    url_meta = f"https://pems.dot.ca.gov/?srq=clearinghouse&district_id=7&geotag=null&yy={current_year}&type=meta&returnformat=text"
+    result = s.post(url=login_url, data={"username": username, "password": password, "commit": "login"})
     # print(result.status_code)
     # print(result.cookies)
-    # page = s.get(search_url)
-    # soup = BeautifulSoup(page.content, "lxml")
+    page = s.get(search_url)
+    meta_page = s.get(url_meta)
+    soup = BeautifulSoup(page.content, "lxml")
+    soup_meta = BeautifulSoup(meta_page.content, "lxml")
     # print(soup)
-    # list_url = soup.text
+    list_url = soup.text
+    meta_list_url = soup_meta.text
     # print(list_url)
-    #
-    #
-    # result_json = json.loads(list_url)
+
+
+    result_json = json.loads(list_url)
+    meta_result_json = json.loads(meta_list_url)
     # print(result_json)
-    # data_month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
-    #               "November", "December"]
-    # detail = "detail"
+    data_month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+                    "November", "December"]
+    data_month_num2str = {1:"January", 2:"February", 3:"March", 4:"April", 5:"May", 6:"June", 7:"July", 8:"August", 9:"September", 10:"October",
+                    11:"November", 12:"December"}
+    detail = "detail"
+
+
+    # """
+    # {"data":
+    #     {
+    #     "October":[{"file_name":"d07_text_meta_2021_10_20.txt","file_id":"435257","bytes":"411,747","url":"\/?download=435257&dnode=Clearinghouse"}],
+    #     "March":[{"file_name":"d07_text_meta_2022_03_12.txt","file_id":"442594","bytes":"412,077","url":"\/?download=442594&dnode=Clearinghouse"}],
+    #     "July":[{"file_name":"d07_text_meta_2022_07_15.txt","file_id":"443890","bytes":"411,315","url":"\/?download=443890&dnode=Clearinghouse"}]
+    #     },
+    #     "detail":{"district":"7","month":7,"year":2022,"date":"2022","data_set":"meta"}
+    #     }
+    # """
     # """
     # {"file_name":"d07_text_station_5min_2021_01_01.txt.gz","file_id":"409509","bytes":"29,673,928","url":"\/?download=409509&dnode=Clearinghouse"}
     # "detail":{"district":"7","month":12,"year":2021,"date":"2021","data_set":"station_5min"}}
     # """
-    #
+
     # """
     # 7天预测3天
     # """
-    #
-    # ### 下载最新一天的数据
-    # latest_data_url = ""
-    # for month in data_month[::-1]:
-    #     if month in result_json['data']:
-    #         latest_data_url = 'https://pems.dot.ca.gov' + result_json['data'][month][-1]["url"]
-    #         latest_data_name = result_json['data'][month][-1]["file_name"]
-    #         latest_data = result_json['data'][month][-1]["file_name"].split('.')[0].split('5min_')[1]
-    #         break
-    # print(latest_data_url)
-    # print(latest_data_name)
-    # print(latest_data)
 
+    ### 下载最新一天的数据
+    latest_data_month = data_month_num2str[result_json['detail']["month"]]
+    latest_data_year = result_json['detail']["year"]
+    latest_data_url = ""
+    latest_data_url = 'https://pems.dot.ca.gov' + result_json['data'][latest_data_month][-1]["url"]
+    latest_data_name = result_json['data'][latest_data_month][-1]["file_name"]
+    latest_data = result_json['data'][latest_data_month][-1]["file_name"].split('.')[0].split('5min_')[1]
+
+    print(latest_data_url)
+    print(latest_data_name)
+    print(latest_data)
+
+    # latest_meat_data_month = data_month_num2str[meta_result_json['detail']["month"]]
+    latest_meat_data_month = data_month_num2str[3]
+    latest_meta_data_year = meta_result_json['detail']["year"]
+    latest_meta_data_url = ""
+    latest_meta_data_url = 'https://pems.dot.ca.gov' + meta_result_json['data'][latest_meat_data_month][-1]["url"]
+    latest_meta_data_name = meta_result_json['data'][latest_meat_data_month][-1]["file_name"]
+    latest_meta_data = meta_result_json['data'][latest_meat_data_month][-1]["file_name"].split('.')[0].split('meta_')[1]
+
+    print(latest_meta_data_url)
+    print(latest_meta_data_name)
+    print(latest_meta_data)
+
+
+    # break
     # """
     #
     # https://pems.dot.ca.gov/?download=430913&amp;dnode;=Clearinghouse
@@ -163,39 +239,32 @@ if __name__ == "__main__":
     # """
 
 
-    latest_data_url = "https://down.wss.show/mt36wnf/8/yo/8yoxmt36wnf?cdn_sign=1659625360-66-0-35778ab0c7692c94bf2459add6c866a5&exp=1200&response-content-disposition=attachment%3B%20filename%3D%22d07_text_station_5min_2022_07_31.txt.gz%22%3B%20filename%2A%3Dutf-8%27%27d07_text_station_5min_2022_07_31.txt.gz"
-    meta_data_url = "https://down.wss.show/tftoq18/8/yq/8yqrtftoq18?cdn_sign=1659626090-80-0-ed58eb2d57251c3ce7102fddce0583d7&exp=240&response-content-disposition=attachment%3B%20filename%3D%22d07_text_meta_2022_03_12.txt%22%3B%20filename%2A%3Dutf-8%27%27d07_text_meta_2022_03_12.txt"
-    latest_data_name = "hahah"
-    if osp.exists(latest_data_name):
-        print("没有更新")
-        time.sleep(1000)
-    else:
+    # latest_data_url = "https://down.wss.show/mt36wnf/8/yo/8yoxmt36wnf?cdn_sign=1659625360-66-0-35778ab0c7692c94bf2459add6c866a5&exp=1200&response-content-disposition=attachment%3B%20filename%3D%22d07_text_station_5min_2022_07_31.txt.gz%22%3B%20filename%2A%3Dutf-8%27%27d07_text_station_5min_2022_07_31.txt.gz"
+    # meta_data_url = "https://down.wss.show/tftoq18/8/yq/8yqrtftoq18?cdn_sign=1659626090-80-0-ed58eb2d57251c3ce7102fddce0583d7&exp=240&response-content-disposition=attachment%3B%20filename%3D%22d07_text_meta_2022_03_12.txt%22%3B%20filename%2A%3Dutf-8%27%27d07_text_meta_2022_03_12.txt"
+
+    if osp.exists(raw_path+'/'+latest_data_name):
+        print("==============================没有更新================================")
         pass
-        latest_data_name = raw_path + "/d07_text_station_5min_2022_08_10.txt.gz"
-        # un_gz('./d07_text_station_5min_2022_07_31.txt.gz')
-        # experiment(dataset="pems-50", model="stgcn", resume_training=True, **kwargs)
+    else:
+        print(raw_path)
+        if osp.exists(raw_path):
+            shutil.rmtree(raw_path)
+            makedirs(raw_path)
+        else:
+            makedirs(raw_path)
+        if osp.exists(process_path):
+            shutil.rmtree(process_path)
+        download_url(s, latest_data_url, raw_path, name=latest_data_name)
+        download_url(s, latest_meta_data_url, raw_path, name="d07_text_meta.txt")
 
-        # try:
-        #     # if osp.exists(raw_path):
-        #     #     shutil.rmtree(raw_path)
-        #     #     makedirs(raw_path)
-        #     # else:
-        #     #     makedirs(raw_path)
-        #     # if osp.exists(process_path):
-        #     #     shutil.rmtree(process_path)
-        #     # download_url(latest_data_url, raw_path, name="d07_text_station_5min_2022_07_29.txt.gz")
-        #     # download_url(meta_data_url, raw_path, name="d07_text_meta.txt")
-        #     latest_data_name = raw_path + "/d07_text_station_5min_2022_07_09.txt.gz"
-        #     # un_gz('./d07_text_station_5min_2022_07_31.txt.gz')
-        #     experiment(dataset="pems-stgcn", model="stgcn", resume_training=True, **kwargs)
-        #     experiment(dataset="pems-stgat", model="stgat", resume_training=True, **kwargs)
-        # except:
-        #     pass
+        # latest_data_name = raw_path + latest_data_name
+        # un_gz(raw_path +'/'+ latest_data_name)
+
+        experiment(dataset="pems-50", model="stgcn", resume_training=True,  devices=[1], **kwargs)
 
 
-    # pre_V_path = os.path.split(os.path.realpath(__file__))[0] + r'\data\pems-stgcn\stgcn_prediction.csv'
-    pre_V_path = os.path.split(os.path.realpath(__file__))[0] + r'\data\pems-stgcn\20220802_truth.csv'
-    meta_path = os.path.split(os.path.realpath(__file__))[0] + r'\data\pems-stgcn\station_meta_288.csv'
+
+    pre_V_path = os.path.split(os.path.realpath(__file__))[0] + '/data/pems-stgcn/stgcn_prediction.csv'
     meta = pd.read_csv(meta_path)
     pre_V = pd.read_csv(pre_V_path)
 
@@ -209,12 +278,11 @@ if __name__ == "__main__":
     demo_data_lat = []
     demo_data_lon = []
     demo_data_pre_speed = []
-
     for i in meta["ID"]:
         for index, j in enumerate(pre_V[str(i)]):
             demo_data_ID.append(i)
             s = time_timestamp[index]
-            a = dt.datetime.strptime(s, '%Y/%m/%d %H:%M')
+            a = dt.datetime.strptime(s, '%Y-%m-%d %H:%M:%S')
             b = dt.datetime.strftime(a, '%Y-%m-%d %H:%M:%S')
             demo_data_time.append(b)
             demo_data_lat.append(get_location(i)[0])
@@ -225,17 +293,9 @@ if __name__ == "__main__":
     demo_data["timestamp"] = demo_data_time
     demo_data["Latitude"] = demo_data_lat
     demo_data["Longitude"] = demo_data_lon
-    maxpp = max(demo_data_pre_speed)
-    minpp = min(demo_data_pre_speed)
-    for i in range(len(demo_data_pre_speed)):
-        xxx = (demo_data_pre_speed[i]-minpp)/(maxpp-minpp)
-        # demo_data_pre_speed[i] = (xxx**(1/10))*1000
     demo_data["predict_speed"] = demo_data_pre_speed
-    demo_data.to_csv(os.path.split(os.path.realpath(__file__))[0] + r'\data\pems-stgcn\demo_data.csv', index=False)
-
-
-
-    # travel_log = pd.read_csv(os.path.split(os.path.realpath(__file__))[0] + r'\data\pems-stgcn\demo_data.csv')
+    demo_data.to_csv(os.path.split(os.path.realpath(__file__))[0] + '/data/pems-stgcn/demo_data.csv', index=False)
+    # travel_log = pd.read_csv("F:/CogDL/cogdl-for-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_data.csv")
     travel_log = demo_data
     timestamp = travel_log['timestamp']
     timestamp_set = set(timestamp)
@@ -260,50 +320,43 @@ if __name__ == "__main__":
     load_dotenv()
 
     # set page layout
-    dsds = ['eqw','eqweqw','eqweqwe']
     st.set_page_config(
         page_title="PeMS traffic predict by CogDl",
         page_icon="🌍",
         layout="wide",
         initial_sidebar_state="expanded",
     )
-
-
     @st.cache
     def load_data():
         """ Load the cleaned data with latitudes, longitudes & timestamps """
         travel_log = pd.read_csv(
-            r'C:\Users\user\Desktop\Aotu_cogdl\cogdl-trafficPre-master\examples\simple_stgcn\data\pems-stgcn\demo_data.csv')
+            '/home/renxiangsheng/Auto_trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_data.csv')
         # travel_log = pd.read_csv("/home/xiangsheng/zp/cogdl-trafficPre/examples/simple_stgcn/data/pems-stgcn/demo_streamlit.csv")
         # travel_log = pd.read_csv("./data/pems-stgcn/demo_streamlit.csv")
         travel_log["date"] = pd.to_datetime(travel_log["timestamp"])
         return travel_log
 
 
-    st.title("🌍 PeMS traffic predict by CogDl"  +random.choice(dsds))
+    st.title("🌍 PeMS traffic predict by CogDl")
 
     travel_data = load_data()
     # 绘制Map，中心经纬度[32, 120],开始缩放程度是5倍
     # tiles用于指示地图风格 主要用到的风格：Stamen Toner(黑白)，默认(OSM)，Stamen Terrain(地形图)
-    bbb += 1
-    tii = ["Stamen Toner", "Stamen Terrain"]
-    print(bbb)
-
-    map_osm = folium.Map(location=[34, -118], zoom_start=10, tiles="Stamen Toner", control_scale=True)
+    map_osm = folium.Map(location=[34, -118], zoom_start=10, tiles='Stamen Toner', control_scale=True)
 
     # map_osm.add_child(folium.ClickForMarker())  # 标记图标
 
     # 将热力图添加到前面建立的map里
     # 可设置热力图的颜色，0.4表示的数据的40%分位数。radius=5可设置热力斑块的大小。
 
-    """
-        def __init__(self, data, index=None, name=None, radius=15, min_opacity=0,
-                     max_opacity=0.6, scale_radius=False, gradient=None,
-                     use_local_extrema=False, auto_play=False,
-                     display_index=True, index_steps=1, min_speed=0.1,
-                     max_speed=10, speed_step=0.1, position='bottomleft',
-                     overlay=True, control=True, show=True):
-    """
+    # """
+    #     def __init__(self, data, index=None, name=None, radius=15, min_opacity=0,
+    #                     max_opacity=0.6, scale_radius=False, gradient=None,
+    #                     use_local_extrema=False, auto_play=False,
+    #                     display_index=True, index_steps=1, min_speed=0.1,
+    #                     max_speed=10, speed_step=0.1, position='bottomleft',
+    #                     overlay=True, control=True, show=True):
+    # """
 
     # scale_radius=False
     # min_opacity max_opacity 热图的最小、大不透明度
@@ -319,12 +372,11 @@ if __name__ == "__main__":
     # overlay 将层添加为可选覆盖（True）或基础层（False）。
     # control 图层是否包含在图层控制中。
     # show 是否在开口处显示该层（仅适用于覆盖层）。
-
     hm = folium.plugins.HeatMapWithTime(data_move, index=new_sort_timeatamp, name="Speed Map", radius=15,
                                         min_opacity=0.5,
                                         max_opacity=0.6, scale_radius=False,
-                                        gradient={.0001: 'blue', .2: 'lime', .3: 'red', .4: 'black', .5: 'pink',
-                                                  .6: 'green', .7: 'blue', .8:'black',.9:'red',1: 'yellow'},
+                                        gradient={.1: 'blue', .2: 'lime', .3: 'red', .4: 'black', .5: 'pink',
+                                                    .6: 'green', 1: 'yellow'},
                                         use_local_extrema=True, auto_play=False,
                                         display_index=True, index_steps=1, min_speed=1,
                                         max_speed=100, speed_step=1, position='bottomleft',
@@ -333,8 +385,10 @@ if __name__ == "__main__":
     st.subheader("Heatmap")
     fig = folium.Figure().add_child(map_osm)
     components.html(fig.render(), height=800, width=1600)
-    file_path = r"./demo_traffic.html"
+    file_path = "./demo_traffic.html"
     hm.save(file_path)
-    time.sleep(120)
+
+    print("-----------------------------------------------------------------")
+    time.sleep(3600*24)
 
     st.experimental_rerun()
